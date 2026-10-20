@@ -79,7 +79,7 @@ Phase 1 formalizes the minimum foundational data structures across six domain pi
    - `ReviewDecision`: Human governance verdicts (`APPROVE`, `REJECT`, `REQUEST_CHANGES`) with audit rationale and feedback notes.
 
 6. **Append-Only Audit Events** (`app/domain/models/audit.py`)
-   - `AuditEvent`: Tamper-evident event log omitting update triggers. Stores event payloads and privacy-preserving SHA-256 client IP hashes.
+   - `AuditEvent`: Append-only event log protected at the ORM layer against updates and deletes (omits `updated_at`). Stores structured event payloads with privacy-preserving SHA-256 client IP pseudonymization. (Note: True cryptographic tamper-evidence and hardware WORM storage are deferred to future security hardening phases).
 
 ---
 

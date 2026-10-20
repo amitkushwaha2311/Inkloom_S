@@ -278,3 +278,25 @@ async def test_audit_event_immutability(db_session: AsyncSession):
     assert audit.id is not None
     assert audit.occurred_at is not None
     assert not hasattr(audit, "updated_at")  # AuditEvent has no updated_at (immutable)
+
+    # Verify that updating an AuditEvent raises ValueError
+    audit.actor_id = "malicious_actor"
+    with pytest.raises(ValueError, match="AuditEvent records are append-only: updates are prohibited"):
+        await db_session.flush()
+    await db_session.rollback()
+
+    # Verify that deleting an AuditEvent raises ValueError
+    fresh_audit = AuditEvent(
+        event_type=AuditEventType.POLICY_PUBLISHED,
+        actor_id="admin_user_99",
+        resource_type="BrandPolicy",
+        resource_id="pol_12345",
+        event_payload={"policy_name": "Tone Guide", "version": 2},
+    )
+    db_session.add(fresh_audit)
+    await db_session.flush()
+
+    await db_session.delete(fresh_audit)
+    with pytest.raises(ValueError, match="AuditEvent records are append-only: deletions are prohibited"):
+        await db_session.flush()
+    await db_session.rollback()
