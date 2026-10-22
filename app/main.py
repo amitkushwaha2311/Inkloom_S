@@ -9,6 +9,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 
 from app.api.middleware import RequestContextMiddleware
 from app.api.v1.endpoints.health import router as root_health_router
@@ -69,6 +70,10 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
+    # Register Trusted Hosts protection
+    if settings.ALLOWED_HOSTS and settings.ALLOWED_HOSTS != ["*"]:
+        app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.ALLOWED_HOSTS)
+
     # Register Cross-Origin Resource Sharing (CORS)
     app.add_middleware(
         CORSMiddleware,
@@ -78,7 +83,7 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    # Register custom request context and tracing middleware
+    # Register custom request context, security headers, and tracing middleware
     app.add_middleware(RequestContextMiddleware)
 
     # Register standardized exception handlers

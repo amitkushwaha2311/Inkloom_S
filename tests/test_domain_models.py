@@ -281,7 +281,9 @@ async def test_audit_event_immutability(db_session: AsyncSession):
 
     # Verify that updating an AuditEvent raises ValueError
     audit.actor_id = "malicious_actor"
-    with pytest.raises(ValueError, match="AuditEvent records are append-only: updates are prohibited"):
+    with pytest.raises(
+        ValueError, match="AuditEvent records are append-only: updates are prohibited"
+    ):
         await db_session.flush()
     await db_session.rollback()
 
@@ -297,6 +299,8 @@ async def test_audit_event_immutability(db_session: AsyncSession):
     await db_session.flush()
 
     await db_session.delete(fresh_audit)
-    with pytest.raises(ValueError, match="AuditEvent records are append-only: deletions are prohibited"):
+    with pytest.raises(
+        ValueError, match="AuditEvent records are append-only: deletions are prohibited"
+    ):
         await db_session.flush()
     await db_session.rollback()

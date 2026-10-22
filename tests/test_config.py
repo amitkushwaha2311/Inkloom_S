@@ -46,7 +46,9 @@ def test_production_security_enforcement():
         )
 
     # Production cannot use default placeholder secret key
-    with pytest.raises(ValidationError, match="SECRET_KEY must be a cryptographically strong string"):
+    with pytest.raises(
+        ValidationError, match="SECRET_KEY must be a cryptographically strong string"
+    ):
         Settings(
             ENVIRONMENT=AppEnvironment.PRODUCTION,
             DEBUG=False,
@@ -66,7 +68,9 @@ def test_production_security_enforcement():
 
 def test_get_safe_summary_masks_credentials():
     """Verify get_safe_summary hides embedded credentials in database URLs."""
-    s = Settings(DATABASE_URL="postgresql+asyncpg://admin_user:super_secret_pw@db.internal:5432/inkloom")
+    s = Settings(
+        DATABASE_URL="postgresql+asyncpg://admin_user:super_secret_pw@db.internal:5432/inkloom"
+    )
     summary = s.get_safe_summary()
     assert "super_secret_pw" not in summary["database_target"]
     assert "***:***@" in summary["database_target"]

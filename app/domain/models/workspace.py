@@ -38,7 +38,10 @@ class BrandWorkspace(Base, UUIDPrimaryKeyMixin, TimestampMixin):
         "BrandPolicy", back_populates="workspace", cascade="all, delete-orphan", lazy="selectin"
     )
     submissions: Mapped[list["ContentSubmission"]] = relationship(
-        "ContentSubmission", back_populates="workspace", cascade="all, delete-orphan", lazy="selectin"
+        "ContentSubmission",
+        back_populates="workspace",
+        cascade="all, delete-orphan",
+        lazy="selectin",
     )
 
 
@@ -46,9 +49,7 @@ class WorkspaceMember(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     """Associates an authenticated user with a workspace and an assigned role."""
 
     __tablename__ = "workspace_members"
-    __table_args__ = (
-        UniqueConstraint("workspace_id", "user_id", name="uq_workspace_member_user"),
-    )
+    __table_args__ = (UniqueConstraint("workspace_id", "user_id", name="uq_workspace_member_user"),)
 
     workspace_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("brand_workspaces.id", ondelete="CASCADE"), nullable=False, index=True
@@ -59,7 +60,9 @@ class WorkspaceMember(Base, UUIDPrimaryKeyMixin, TimestampMixin):
         SAEnum(WorkspaceRole, native_enum=False), default=WorkspaceRole.CONTRIBUTOR, nullable=False
     )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    joined_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
+    joined_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, nullable=False
+    )
 
     # Relationships
     workspace: Mapped["BrandWorkspace"] = relationship("BrandWorkspace", back_populates="members")

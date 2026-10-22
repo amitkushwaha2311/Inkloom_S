@@ -1,0 +1,163 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-obsidian: #191916;
+  --color-charcoal: #252520;
+  --color-ivory: #F4F0E8;
+  --color-paper-white: #FBF9F4;
+  --color-copper: #B96B49;
+  --color-copper-highlight: #D79570;
+  --color-chartreuse: #C5CF78;
+  --color-secondary-text: #77766E;
+  --color-border: rgba(37, 37, 32, 0.12);
+  --color-dark-surface: #20201C;
+  --color-dark-secondary-surface: #292923;
+}
+
+/* Base styling */
+body {
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+}
+
+/* -------------------------------------------------------------------------- */
+/* Liquid Glass Design System                                                 */
+/* -------------------------------------------------------------------------- */
+
+.liquid-glass {
+  background: rgba(255, 255, 255, 0.03);
+  background-blend-mode: luminosity;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: none;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+.liquid-glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.4px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.45) 0%,
+    rgba(255, 255, 255, 0.15) 20%,
+    rgba(255, 255, 255, 0) 40%,
+    rgba(255, 255, 255, 0) 60%,
+    rgba(255, 255, 255, 0.15) 80%,
+    rgba(255, 255, 255, 0.45) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.liquid-glass > * {
+  position: relative;
+  z-index: 1;
+}
+
+.liquid-glass-strong {
+  background: rgba(25, 25, 22, 0.7);
+  backdrop-filter: blur(50px);
+  -webkit-backdrop-filter: blur(50px);
+  box-shadow:
+    0 20px 40px rgba(0, 0, 0, 0.25),
+    inset 0 1px 1px rgba(255, 255, 255, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.liquid-glass-strong::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.4px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.5) 0%,
+    rgba(255, 255, 255, 0.2) 20%,
+    rgba(255, 255, 255, 0) 40%,
+    rgba(255, 255, 255, 0) 60%,
+    rgba(255, 255, 255, 0.2) 80%,
+    rgba(255, 255, 255, 0.5) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.liquid-glass-strong > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Warm paper glass for light surfaces */
+.liquid-glass-paper {
+  background: rgba(251, 249, 244, 0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(37, 37, 32, 0.08);
+  box-shadow: 0 10px 30px rgba(37, 37, 32, 0.04);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Stagger Classes                                                            */
+/* -------------------------------------------------------------------------- */
+
+.stagger-1 { animation-delay: 0ms; }
+.stagger-2 { animation-delay: 120ms; }
+.stagger-3 { animation-delay: 240ms; }
+.stagger-4 { animation-delay: 360ms; }
+.stagger-5 { animation-delay: 480ms; }
+.stagger-6 { animation-delay: 600ms; }
+
+/* -------------------------------------------------------------------------- */
+/* Custom Scrollbars                                                          */
+/* -------------------------------------------------------------------------- */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(119, 118, 110, 0.3);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(185, 107, 73, 0.6);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Reduced Motion Overrides                                                   */
+/* -------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

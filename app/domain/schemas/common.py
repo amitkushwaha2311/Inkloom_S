@@ -9,7 +9,9 @@ class ErrorDetail(BaseModel):
     code: str = Field(..., description="Machine-readable error classification code")
     message: str = Field(..., description="Human-readable summary of the error")
     details: Any | None = Field(None, description="Optional granular diagnostic details")
-    request_id: str | None = Field(None, description="Unique correlation ID for tracing the request")
+    request_id: str | None = Field(
+        None, description="Unique correlation ID for tracing the request"
+    )
 
 
 class ErrorEnvelope(BaseModel):

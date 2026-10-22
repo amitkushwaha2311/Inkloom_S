@@ -40,7 +40,13 @@ def run_migrations_offline() -> None:
 
 
 def do_run_migrations(connection: Connection) -> None:
-    context.configure(connection=connection, target_metadata=target_metadata)
+    # compare_type=False suppresses false-positive VARCHAR→Enum diffs on SQLite
+    # (native_enum=False enums are stored as VARCHAR; Python validates the values)
+    context.configure(
+        connection=connection,
+        target_metadata=target_metadata,
+        compare_type=False,
+    )
 
     with context.begin_transaction():
         context.run_migrations()

@@ -74,7 +74,8 @@ def setup_logging() -> None:
         formatter_processor = structlog.dev.ConsoleRenderer(colors=True)
 
     structlog.configure(
-        processors=shared_processors + [
+        processors=shared_processors
+        + [
             structlog.stdlib.PositionalArgumentsFormatter(),
             structlog.processors.format_exc_info,
             structlog.stdlib.ProcessorFormatter.wrap_for_formatter,

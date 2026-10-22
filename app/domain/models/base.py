@@ -17,6 +17,7 @@ def utc_now() -> datetime:
 
 class Base(DeclarativeBase):
     """Declarative base class for all persistent domain entities."""
+
     pass
 
 

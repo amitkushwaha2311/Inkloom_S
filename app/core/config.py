@@ -39,8 +39,23 @@ class Settings(BaseSettings):
 
     # Security & Secrets
     SECRET_KEY: str = "change-me-to-a-secure-random-secret-key-at-least-32-chars-long"
-    ALLOWED_HOSTS: list[str] = ["127.0.0.1", "localhost"]
-    CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
+    ALLOWED_HOSTS: list[str] = ["127.0.0.1", "localhost", "testserver"]
+    CORS_ORIGINS: list[str] = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ]
+
+    # Rate Limiting & DoS Protection
+    RATE_LIMIT_ENABLED: bool = True
+    AUTH_RATE_LIMIT_MAX_REQUESTS: int = 20
+    VERIFY_RATE_LIMIT_MAX_REQUESTS: int = 60
+    MAX_REQUEST_BODY_BYTES: int = 5 * 1024 * 1024  # 5 MB max body size
+
+    # JWT Token Settings
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
     # Database Configuration
     DATABASE_URL: str = "sqlite+aiosqlite:///./inkloom_sentinel.db"

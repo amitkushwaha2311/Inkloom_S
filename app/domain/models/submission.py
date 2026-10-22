@@ -26,8 +26,9 @@ from app.domain.enums import SubmissionStatus
 from app.domain.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin, utc_now
 
 if TYPE_CHECKING:
+    from app.domain.models.evidence import ContentClaim
     from app.domain.models.review import ReviewDecision
-    from app.domain.models.verification import VerificationFinding
+    from app.domain.models.verification import VerificationFinding, VerificationRun
     from app.domain.models.workspace import BrandWorkspace
 
 
@@ -42,14 +43,23 @@ class ContentSubmission(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     campaign_tag: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
     status: Mapped[SubmissionStatus] = mapped_column(
-        SAEnum(SubmissionStatus, native_enum=False), default=SubmissionStatus.DRAFT, nullable=False, index=True
+        SAEnum(SubmissionStatus, native_enum=False),
+        default=SubmissionStatus.DRAFT,
+        nullable=False,
+        index=True,
     )
     author_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
 
     # Relationships
-    workspace: Mapped["BrandWorkspace"] = relationship("BrandWorkspace", back_populates="submissions")
+    workspace: Mapped["BrandWorkspace"] = relationship(
+        "BrandWorkspace", back_populates="submissions"
+    )
     revisions: Mapped[list["ContentRevision"]] = relationship(
-        "ContentRevision", back_populates="submission", cascade="all, delete-orphan", order_by="ContentRevision.revision_number", lazy="selectin"
+        "ContentRevision",
+        back_populates="submission",
+        cascade="all, delete-orphan",
+        order_by="ContentRevision.revision_number",
+        lazy="selectin",
     )
     review_decisions: Mapped[list["ReviewDecision"]] = relationship(
         "ReviewDecision", back_populates="submission", cascade="all, delete-orphan", lazy="selectin"
@@ -71,13 +81,26 @@ class ContentRevision(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     content_text: Mapped[str] = mapped_column(Text, nullable=False)
     content_format: Mapped[str] = mapped_column(String(32), default="markdown", nullable=False)
     metadata_payload: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
-    submitted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
+    submitted_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, nullable=False
+    )
 
     # Relationships
-    submission: Mapped["ContentSubmission"] = relationship("ContentSubmission", back_populates="revisions")
+    submission: Mapped["ContentSubmission"] = relationship(
+        "ContentSubmission", back_populates="revisions"
+    )
     findings: Mapped[list["VerificationFinding"]] = relationship(
-        "VerificationFinding", back_populates="revision", cascade="all, delete-orphan", lazy="selectin"
+        "VerificationFinding",
+        back_populates="revision",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+    verification_runs: Mapped[list["VerificationRun"]] = relationship(
+        "VerificationRun", back_populates="revision", cascade="all, delete-orphan", lazy="selectin"
     )
     review_decisions: Mapped[list["ReviewDecision"]] = relationship(
         "ReviewDecision", back_populates="revision", lazy="selectin"
+    )
+    claims: Mapped[list["ContentClaim"]] = relationship(
+        "ContentClaim", back_populates="revision", cascade="all, delete-orphan", lazy="selectin"
     )

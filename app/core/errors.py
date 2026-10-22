@@ -97,16 +97,47 @@ class ServiceUnavailableError(AppError):
         )
 
 
+class RateLimitExceededError(AppError):
+    """Raised when an actor or IP exceeds rate limits."""
+
+    def __init__(
+        self,
+        message: str = "Rate limit exceeded. Please try again later.",
+        retry_after: int = 60,
+    ):
+        super().__init__(
+            message=message,
+            code="RATE_LIMIT_EXCEEDED",
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            details={"retry_after_seconds": retry_after},
+        )
+        self.retry_after = retry_after
+
+
+class PayloadTooLargeError(AppError):
+    """Raised when an HTTP request payload exceeds the maximum permitted byte size."""
+
+    def __init__(self, max_bytes: int):
+        super().__init__(
+            message=f"Request payload exceeds maximum allowed size of {max_bytes} bytes.",
+            code="PAYLOAD_TOO_LARGE",
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            details={"max_allowed_bytes": max_bytes},
+        )
+
+
 def build_error_response(
     code: str,
     message: str,
     status_code: int,
     request_id: str | None = None,
     details: Any | None = None,
+    headers: dict[str, str] | None = None,
 ) -> JSONResponse:
     """Format an error payload into the uniform API error structure."""
     return JSONResponse(
         status_code=status_code,
+        headers=headers,
         content={
             "error": {
                 "code": code,
@@ -131,12 +162,16 @@ def register_exception_handlers(app: FastAPI) -> None:
             status_code=exc.status_code,
             request_id=request_id,
         )
+        resp_headers = {}
+        if hasattr(exc, "retry_after"):
+            resp_headers["Retry-After"] = str(exc.retry_after)
         return build_error_response(
             code=exc.code,
             message=exc.message,
             status_code=exc.status_code,
             request_id=request_id,
             details=exc.details,
+            headers=resp_headers or None,
         )
 
     @app.exception_handler(RequestValidationError)
@@ -169,9 +204,7 @@ def register_exception_handlers(app: FastAPI) -> None:
         )
 
     @app.exception_handler(StarletteHTTPException)
-    async def http_exception_handler(
-        request: Request, exc: StarletteHTTPException
-    ) -> JSONResponse:
+    async def http_exception_handler(request: Request, exc: StarletteHTTPException) -> JSONResponse:
         request_id = getattr(request.state, "request_id", None)
         code_map = {
             404: "NOT_FOUND",
@@ -189,9 +222,7 @@ def register_exception_handlers(app: FastAPI) -> None:
         )
 
     @app.exception_handler(Exception)
-    async def generic_exception_handler(
-        request: Request, exc: Exception
-    ) -> JSONResponse:
+    async def generic_exception_handler(request: Request, exc: Exception) -> JSONResponse:
         request_id = getattr(request.state, "request_id", None)
         logger.error(
             "unhandled_system_error",

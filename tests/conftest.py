@@ -2,6 +2,10 @@
 
 Sets up isolated async test environment using in-memory SQLite
 and provides httpx.AsyncClient fixtures for testing the FastAPI application.
+
+Phase 3 additions:
+- auth_client fixture: registers a user and injects a valid Bearer token
+- make_user / make_token helpers shared across test modules
 """
 
 import os
@@ -52,6 +56,18 @@ async def setup_database() -> AsyncGenerator[None, None]:
         await conn.run_sync(Base.metadata.drop_all)
 
 
+@pytest_asyncio.fixture(scope="function", autouse=True)
+async def reset_rate_limiters() -> AsyncGenerator[None, None]:
+    """Reset rate limiter state before and after each test."""
+    from app.core.rate_limit import auth_rate_limiter, expensive_ops_limiter
+
+    await auth_rate_limiter.reset()
+    await expensive_ops_limiter.reset()
+    yield
+    await auth_rate_limiter.reset()
+    await expensive_ops_limiter.reset()
+
+
 @pytest_asyncio.fixture
 async def db_session() -> AsyncGenerator[AsyncSession, None]:
     """Provide an isolated transactional database session."""
@@ -80,3 +96,58 @@ async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
         yield ac
 
     app.dependency_overrides.clear()
+
+
+# ---------------------------------------------------------------------------
+# Auth helper fixtures
+# ---------------------------------------------------------------------------
+
+_DEFAULT_EMAIL = "alice@example.com"
+_DEFAULT_PASSWORD = "TestPass1"
+
+
+async def register_and_login(
+    client: AsyncClient,
+    email: str = _DEFAULT_EMAIL,
+    password: str = _DEFAULT_PASSWORD,
+    full_name: str = "Alice Test",
+) -> dict:
+    """Register a user and return the token response dict."""
+    r = await client.post(
+        "/api/v1/auth/register",
+        json={"email": email, "password": password, "full_name": full_name},
+    )
+    assert r.status_code == 201, f"Registration failed: {r.text}"
+    r2 = await client.post(
+        "/api/v1/auth/login",
+        json={"email": email, "password": password},
+    )
+    assert r2.status_code == 200, f"Login failed: {r2.text}"
+    return r2.json()
+
+
+@pytest_asyncio.fixture
+async def auth_tokens(client: AsyncClient) -> dict:
+    """Register default user and return token response."""
+    return await register_and_login(client)
+
+
+@pytest_asyncio.fixture
+async def auth_headers(auth_tokens: dict) -> dict:
+    """Return Authorization headers for the default user."""
+    return {"Authorization": f"Bearer {auth_tokens['access_token']}"}
+
+
+async def create_workspace_with_owner(
+    client: AsyncClient,
+    headers: dict,
+    name: str = "Test Workspace",
+) -> dict:
+    """Create a workspace and return its JSON."""
+    r = await client.post(
+        "/api/v1/workspaces",
+        json={"name": name},
+        headers=headers,
+    )
+    assert r.status_code == 201, r.text
+    return r.json()

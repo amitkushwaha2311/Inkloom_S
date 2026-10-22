@@ -73,6 +73,7 @@ class PolicyGuideline(Base, UUIDPrimaryKeyMixin, TimestampMixin):
         SAEnum(SeverityLevel, native_enum=False), default=SeverityLevel.MEDIUM, nullable=False
     )
     is_mandatory: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    rule_config: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
 
     # Relationships
     policy: Mapped["BrandPolicy"] = relationship("BrandPolicy", back_populates="guidelines")
