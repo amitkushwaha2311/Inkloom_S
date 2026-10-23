@@ -35,12 +35,15 @@ export interface Workspace {
   name: string
   slug: string
   description?: string | null
+  is_active: boolean
   created_at: string
-  updated_at: string
+  // Note: backend WorkspaceResponse has no updated_at field
 }
 
 export interface WorkspaceDetail extends Workspace {
-  members: WorkspaceMember[]
+  // GET /workspaces/:id returns the same WorkspaceResponse shape;
+  // members and current_user_role are fetched separately via /members.
+  members?: WorkspaceMember[]
   current_user_role?: WorkspaceRole
 }
 

@@ -1,0 +1,37 @@
+# Render deployment configuration for Inkloom Sentinel backend
+# Docs: https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: inkloom-sentinel-api
+    runtime: python
+    region: oregon
+    plan: free
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT"
+    healthCheckPath: /health/live
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: DEBUG
+        value: "false"
+      - key: LOG_JSON_FORMAT
+        value: "true"
+      - key: LOG_LEVEL
+        value: INFO
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false          # Set manually in Render dashboard from Supabase
+      - key: ALLOWED_HOSTS
+        sync: false          # e.g. ["inkloom-sentinel-api.onrender.com"]
+      - key: CORS_ORIGINS
+        sync: false          # e.g. ["https://your-project.vercel.app"]
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "15"
+      - key: REFRESH_TOKEN_EXPIRE_DAYS
+        value: "7"
+      - key: DB_POOL_SIZE
+        value: "5"
+      - key: DB_MAX_OVERFLOW
+        value: "10"

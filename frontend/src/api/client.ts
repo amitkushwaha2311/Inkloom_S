@@ -221,7 +221,12 @@ class ApiClient {
   // Workspaces API
   // -------------------------------------------------------------------------
   workspaces = {
-    list: () => this.request<{ items: Workspace[]; total: number }>('/api/v1/workspaces'),
+    // Backend returns a plain array — wrap it into the paginated envelope the
+    // context expects so both sides stay consistent.
+    list: async (): Promise<{ items: Workspace[]; total: number }> => {
+      const arr = await this.request<Workspace[]>('/api/v1/workspaces')
+      return { items: Array.isArray(arr) ? arr : [], total: Array.isArray(arr) ? arr.length : 0 }
+    },
 
     get: (id: string) => this.request<WorkspaceDetail>(`/api/v1/workspaces/${id}`),
 

@@ -7,20 +7,25 @@ import {
   FileCheck,
   FileText,
   ShieldCheck,
-  AlertTriangle,
   ArrowRight,
   Plus,
   Loader2,
-  Clock,
   Layers,
+  Building2,
 } from 'lucide-react'
 
 export const DashboardOverviewPage: React.FC = () => {
-  const { activeWorkspace } = useAuth()
+  const { activeWorkspace, createWorkspace } = useAuth()
   const [loading, setLoading] = useState(true)
   const [policies, setPolicies] = useState<BrandPolicy[]>([])
   const [submissions, setSubmissions] = useState<ContentSubmission[]>([])
   const [analytics, setAnalytics] = useState<GovernanceAnalytics | null>(null)
+
+  // Create-workspace inline form state
+  const [wsName, setWsName] = useState('')
+  const [wsDesc, setWsDesc] = useState('')
+  const [creating, setCreating] = useState(false)
+  const [createError, setCreateError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!activeWorkspace) return
@@ -51,10 +56,91 @@ export const DashboardOverviewPage: React.FC = () => {
     }
   }, [activeWorkspace])
 
+  const handleCreateWorkspace = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!wsName.trim()) return
+    setCreateError(null)
+    setCreating(true)
+    try {
+      await createWorkspace({ name: wsName.trim(), description: wsDesc.trim() || undefined })
+      setWsName('')
+      setWsDesc('')
+    } catch (err: any) {
+      setCreateError(err.message || 'Failed to create workspace')
+    } finally {
+      setCreating(false)
+    }
+  }
+
+  // No workspace — show actionable create form, not just a text message.
   if (!activeWorkspace) {
     return (
-      <div className="p-12 text-center text-secondary-text">
-        Please select or create a workspace to view the governance console.
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="w-full max-w-md space-y-6 animate-fade-up">
+          <div className="text-center space-y-2">
+            <div className="w-14 h-14 rounded-2xl bg-copper/15 border border-copper/30 flex items-center justify-center mx-auto">
+              <Building2 className="w-7 h-7 text-copper-highlight" />
+            </div>
+            <h1 className="font-serif text-2xl text-paper-white">Create your first workspace</h1>
+            <p className="text-xs text-secondary-text max-w-xs mx-auto">
+              Workspaces isolate your brand policies, content submissions, and audit logs.
+              Create one to get started.
+            </p>
+          </div>
+
+          <form
+            onSubmit={handleCreateWorkspace}
+            className="p-6 rounded-2xl bg-charcoal border border-border-dark space-y-4"
+          >
+            <div className="space-y-1">
+              <label className="text-[11px] font-semibold uppercase tracking-wider text-secondary-text">
+                Workspace Name <span className="text-copper-highlight">*</span>
+              </label>
+              <input
+                id="ws-name-input"
+                type="text"
+                required
+                value={wsName}
+                onChange={(e) => setWsName(e.target.value)}
+                placeholder="e.g. Acme Health Brand Governance"
+                className="w-full px-4 py-2.5 rounded-xl bg-obsidian border border-border-dark text-white placeholder-secondary-text text-sm focus:outline-none focus:ring-2 focus:ring-copper"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[11px] font-semibold uppercase tracking-wider text-secondary-text">
+                Description <span className="text-secondary-text/60">(optional)</span>
+              </label>
+              <textarea
+                id="ws-desc-input"
+                value={wsDesc}
+                onChange={(e) => setWsDesc(e.target.value)}
+                placeholder="Primary workspace for consumer product packaging guidelines."
+                rows={2}
+                className="w-full px-4 py-2.5 rounded-xl bg-obsidian border border-border-dark text-white placeholder-secondary-text text-sm focus:outline-none focus:ring-2 focus:ring-copper resize-none"
+              />
+            </div>
+
+            {createError && (
+              <p className="text-xs text-red-400 bg-red-500/10 px-3 py-2 rounded-lg">
+                {createError}
+              </p>
+            )}
+
+            <button
+              id="create-workspace-submit"
+              type="submit"
+              disabled={creating || !wsName.trim()}
+              className="w-full py-2.5 rounded-xl bg-copper hover:bg-copper-highlight disabled:opacity-50 text-white font-semibold text-xs uppercase tracking-wider flex items-center justify-center space-x-2 transition-colors"
+            >
+              {creating ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Plus className="w-4 h-4" />
+              )}
+              <span>{creating ? 'Creating…' : 'Create Workspace'}</span>
+            </button>
+          </form>
+        </div>
       </div>
     )
   }

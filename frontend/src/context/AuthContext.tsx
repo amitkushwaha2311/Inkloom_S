@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
-import { api, ApiError } from '@/api/client'
+import { api } from '@/api/client'
 import { User, Workspace, WorkspaceDetail } from '@/types/api'
 
 interface AuthContextType {
@@ -11,6 +11,7 @@ interface AuthContextType {
   login: (data: { email: string; password: string }) => Promise<void>
   register: (data: { email: string; password: string; full_name: string }) => Promise<void>
   logout: () => Promise<void>
+  createWorkspace: (data: { name: string; description?: string }) => Promise<Workspace>
   selectWorkspace: (workspaceId: string) => Promise<void>
   refreshWorkspaces: () => Promise<void>
   refreshUser: () => Promise<void>
@@ -27,6 +28,60 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [error, setError] = useState<string | null>(null)
 
   const clearError = () => setError(null)
+
+  // selectWorkspace: fetch workspace detail and set it as active.
+  // The backend GET /workspaces/:id returns WorkspaceResponse (same shape as
+  // list items) without members/current_user_role — treat it as WorkspaceDetail
+  // so the UI has a valid activeWorkspace object.
+  const selectWorkspace = async (workspaceId: string) => {
+    try {
+      const detail = await api.workspaces.get(workspaceId)
+      setActiveWorkspace(detail)
+      api.setActiveWorkspaceId(workspaceId)
+    } catch (err: any) {
+      // If the saved workspace is inaccessible (deleted / membership revoked),
+      // clear it so we don't block the UI.
+      if (err.status === 403 || err.status === 404) {
+        api.setActiveWorkspaceId(null)
+        setActiveWorkspace(null)
+      } else {
+        setError(err.message)
+      }
+    }
+  }
+
+  const refreshWorkspaces = async () => {
+    if (!api.isAuthenticated()) return
+    try {
+      const res = await api.workspaces.list()
+      const list = res.items || []
+      setWorkspaces(list)
+
+      if (list.length === 0) {
+        // User has no workspaces yet — show the empty / create state.
+        setActiveWorkspace(null)
+        api.setActiveWorkspaceId(null)
+        return
+      }
+
+      // Prefer the previously selected workspace if it's still accessible.
+      const savedId = api.getActiveWorkspaceId()
+      const isValidSaved = savedId ? list.some((w) => w.id === savedId) : false
+      const targetId = isValidSaved ? savedId! : list[0].id
+
+      await selectWorkspace(targetId)
+    } catch (err: any) {
+      setError(err.message)
+    }
+  }
+
+  const createWorkspace = async (data: { name: string; description?: string }): Promise<Workspace> => {
+    const created = await api.workspaces.create(data)
+    // Refresh the full list so workspaces state stays in sync, then select the new one.
+    await refreshWorkspaces()
+    await selectWorkspace(created.id)
+    return created
+  }
 
   const refreshUser = async () => {
     if (!api.isAuthenticated()) {
@@ -53,37 +108,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }
 
-  const refreshWorkspaces = async () => {
-    if (!api.isAuthenticated()) return
-    try {
-      const res = await api.workspaces.list()
-      setWorkspaces(res.items || [])
-
-      const savedId = api.getActiveWorkspaceId()
-      const targetWorkspace =
-        res.items.find((w) => w.id === savedId) || res.items[0]
-
-      if (targetWorkspace) {
-        await selectWorkspace(targetWorkspace.id)
-      } else {
-        setActiveWorkspace(null)
-        api.setActiveWorkspaceId(null)
-      }
-    } catch (err: any) {
-      setError(err.message)
-    }
-  }
-
-  const selectWorkspace = async (workspaceId: string) => {
-    try {
-      const detail = await api.workspaces.get(workspaceId)
-      setActiveWorkspace(detail)
-      api.setActiveWorkspaceId(workspaceId)
-    } catch (err: any) {
-      setError(err.message)
-    }
-  }
-
   const login = async (data: { email: string; password: string }) => {
     clearError()
     setLoading(true)
@@ -105,7 +129,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(true)
     try {
       await api.auth.register(data)
-      // Automatically log in after registration
       await api.auth.login({ email: data.email, password: data.password })
       const u = await api.auth.me()
       setUser(u)
@@ -132,6 +155,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     refreshUser()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return (
@@ -145,6 +169,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         login,
         register,
         logout,
+        createWorkspace,
         selectWorkspace,
         refreshWorkspaces,
         refreshUser,
