@@ -63,6 +63,11 @@ class Settings(BaseSettings):
     DB_MAX_OVERFLOW: int = 20
     DB_POOL_TIMEOUT: int = 30
     DB_ECHO: bool = False
+    # SSL mode for asyncpg connections (e.g. "require", "prefer", "disable").
+    # asyncpg does NOT honour the ?sslmode= query parameter in the URL; this
+    # setting is passed via connect_args instead.  Set to "require" for any
+    # Supabase / RDS / managed-PostgreSQL provider that enforces TLS.
+    DB_SSL_MODE: str = ""
 
     # Logging Configuration
     LOG_LEVEL: str = "INFO"
@@ -71,13 +76,33 @@ class Settings(BaseSettings):
     @field_validator("DATABASE_URL")
     @classmethod
     def normalize_database_url(cls, v: str) -> str:
-        """Ensure async driver dialect is specified for SQLAlchemy async engine."""
+        """Ensure async driver dialect is specified for SQLAlchemy async engine.
+
+        Also strips the ``?sslmode=`` query parameter from PostgreSQL URLs.
+        asyncpg silently ignores this parameter when it appears in the URL
+        string; SSL must be configured via ``connect_args`` (see
+        ``build_engine`` in ``database.py``).  Stripping it here prevents
+        the false impression that SSL is active when it is not.
+        """
         if v.startswith("postgresql://"):
-            return v.replace("postgresql://", "postgresql+asyncpg://", 1)
-        if v.startswith("postgres://"):
-            return v.replace("postgres://", "postgresql+asyncpg://", 1)
-        if v.startswith("sqlite://") and not v.startswith("sqlite+aiosqlite://"):
+            v = v.replace("postgresql://", "postgresql+asyncpg://", 1)
+        elif v.startswith("postgres://"):
+            v = v.replace("postgres://", "postgresql+asyncpg://", 1)
+        elif v.startswith("sqlite://") and not v.startswith("sqlite+aiosqlite://"):
             return v.replace("sqlite://", "sqlite+aiosqlite://", 1)
+
+        # Strip sslmode from URL query string for asyncpg URLs.
+        # The sslmode= param is only meaningful for libpq / psycopg2; asyncpg
+        # requires the SSL policy to be passed via connect_args, not the URL.
+        if "postgresql+asyncpg://" in v and "sslmode=" in v:
+            from urllib.parse import parse_qs, urlencode, urlsplit, urlunsplit
+
+            parts = urlsplit(v)
+            qs = parse_qs(parts.query, keep_blank_values=True)
+            qs.pop("sslmode", None)  # remove the offending param
+            new_query = urlencode({k: v2[0] for k, v2 in qs.items()})
+            v = urlunsplit(parts._replace(query=new_query))
+
         return v
 
     @field_validator("LOG_LEVEL")

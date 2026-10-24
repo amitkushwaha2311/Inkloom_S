@@ -75,3 +75,37 @@ def test_get_safe_summary_masks_credentials():
     assert "super_secret_pw" not in summary["database_target"]
     assert "***:***@" in summary["database_target"]
     assert "admin_user" not in summary["database_target"]
+
+
+def test_database_url_sslmode_param_stripped():
+    """Verify ?sslmode= is stripped from asyncpg URLs.
+
+    asyncpg silently ignores the ?sslmode= query parameter when it appears in
+    the URL string.  The normalizer must remove it so there is no false
+    impression that SSL is active when it is not; SSL is applied separately
+    via DB_SSL_MODE / connect_args.
+    """
+    # Supabase-style URL with sslmode=require
+    s = Settings(
+        DATABASE_URL="postgresql://user:pass@db.supabase.co:5432/postgres?sslmode=require"
+    )
+    assert "sslmode" not in s.DATABASE_URL
+    assert s.DATABASE_URL.startswith("postgresql+asyncpg://")
+
+    # Existing query params other than sslmode must be preserved
+    s2 = Settings(
+        DATABASE_URL="postgres://user:pass@db.supabase.co:5432/postgres?sslmode=require&connect_timeout=10"
+    )
+    assert "sslmode" not in s2.DATABASE_URL
+    assert "connect_timeout=10" in s2.DATABASE_URL
+
+    # Already-correct asyncpg URL without sslmode should pass through unchanged
+    plain = "postgresql+asyncpg://user:pass@localhost:5432/db"
+    s3 = Settings(DATABASE_URL=plain)
+    assert s3.DATABASE_URL == plain
+
+
+def test_db_ssl_mode_defaults_empty():
+    """Verify DB_SSL_MODE defaults to empty string so local SQLite dev is unaffected."""
+    s = Settings()
+    assert s.DB_SSL_MODE == ""

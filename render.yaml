@@ -35,3 +35,7 @@ services:
         value: "5"
       - key: DB_MAX_OVERFLOW
         value: "10"
+      # asyncpg ignores ?sslmode= in the DATABASE_URL; set this explicitly.
+      # Supabase (and most managed PostgreSQL) requires TLS — keep as "require".
+      - key: DB_SSL_MODE
+        value: "require"

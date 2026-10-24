@@ -47,6 +47,17 @@ def build_engine(database_url: str | None = None) -> AsyncEngine:
             }
         )
 
+        # asyncpg does NOT honour the ?sslmode= query-string parameter.
+        # SSL must be supplied through connect_args.  DB_SSL_MODE can be set
+        # explicitly (e.g. "require") or auto-detected from the original URL.
+        ssl_mode = settings.DB_SSL_MODE.strip().lower()
+        if ssl_mode:
+            engine_kwargs["connect_args"] = {"ssl": ssl_mode}
+            logger.debug(
+                "asyncpg_ssl_connect_args_applied",
+                ssl_mode=ssl_mode,
+            )
+
     return create_async_engine(url, **engine_kwargs)
 
 
@@ -91,9 +102,25 @@ async def check_database_health() -> dict[str, Any]:
         }
     except Exception as exc:
         latency_ms = round((time.perf_counter() - start_time) * 1000, 2)
+
+        # Build a safe cause chain (asyncpg strips credentials from messages).
+        cause_chain: list[str] = []
+        current: BaseException | None = exc
+        while current is not None:
+            cause_chain.append(f"{type(current).__qualname__}: {current}")
+            current = current.__cause__ or current.__context__
+            if len(cause_chain) >= 5:  # guard against circular refs
+                break
+
         logger.error(
             "database_health_check_failed",
-            error=str(exc.__class__.__name__),
+            error=type(exc).__qualname__,
+            # asyncpg exception messages never contain the connection URL or
+            # password; it is safe to log str(exc) directly here.
+            error_detail=str(exc),
+            error_cause_chain=cause_chain,
+            ssl_mode=settings.DB_SSL_MODE or "(none)",
+            dialect=engine.dialect.name,
             latency_ms=latency_ms,
         )
         return {
