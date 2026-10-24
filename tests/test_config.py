@@ -109,3 +109,22 @@ def test_db_ssl_mode_defaults_empty():
     """Verify DB_SSL_MODE defaults to empty string so local SQLite dev is unaffected."""
     s = Settings()
     assert s.DB_SSL_MODE == ""
+
+
+def test_cors_origins_parsing():
+    """Verify CORS_ORIGINS supports lists, JSON strings, and comma-separated strings."""
+    # Default includes Vercel production origin
+    s_default = Settings()
+    assert "https://inkloom-s.vercel.app" in s_default.CORS_ORIGINS
+
+    # Comma-separated string (common format in cloud dashboard env vars)
+    s_csv = Settings(CORS_ORIGINS="https://inkloom-s.vercel.app, https://preview.vercel.app")
+    assert s_csv.CORS_ORIGINS == ["https://inkloom-s.vercel.app", "https://preview.vercel.app"]
+
+    # JSON array string
+    s_json = Settings(CORS_ORIGINS='["https://inkloom-s.vercel.app", "http://localhost:3000"]')
+    assert s_json.CORS_ORIGINS == ["https://inkloom-s.vercel.app", "http://localhost:3000"]
+
+    # Single string
+    s_single = Settings(CORS_ORIGINS="https://inkloom-s.vercel.app")
+    assert s_single.CORS_ORIGINS == ["https://inkloom-s.vercel.app"]

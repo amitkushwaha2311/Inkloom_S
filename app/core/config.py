@@ -45,6 +45,7 @@ class Settings(BaseSettings):
         "http://127.0.0.1:3000",
         "http://localhost:5173",
         "http://127.0.0.1:5173",
+        "https://inkloom-s.vercel.app",
     ]
 
     # Rate Limiting & DoS Protection
@@ -113,6 +114,36 @@ class Settings(BaseSettings):
         if upper_v not in allowed:
             raise ValueError(f"Invalid LOG_LEVEL '{v}'. Allowed: {', '.join(allowed)}")
         return upper_v
+
+    @field_validator("CORS_ORIGINS", mode="before")
+    @classmethod
+    def assemble_cors_origins(cls, v: str | list[str]) -> list[str]:
+        """Support JSON array string, comma-separated string, or list of origins."""
+        if isinstance(v, str):
+            v = v.strip()
+            if v.startswith("[") and v.endswith("]"):
+                import json
+                try:
+                    return json.loads(v)
+                except Exception:
+                    pass
+            return [origin.strip() for origin in v.split(",") if origin.strip()]
+        return v
+
+    @field_validator("ALLOWED_HOSTS", mode="before")
+    @classmethod
+    def assemble_allowed_hosts(cls, v: str | list[str]) -> list[str]:
+        """Support JSON array string, comma-separated string, or list of hosts."""
+        if isinstance(v, str):
+            v = v.strip()
+            if v.startswith("[") and v.endswith("]"):
+                import json
+                try:
+                    return json.loads(v)
+                except Exception:
+                    pass
+            return [host.strip() for host in v.split(",") if host.strip()]
+        return v
 
     @model_validator(mode="after")
     def validate_production_security(self) -> "Settings":

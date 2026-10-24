@@ -68,6 +68,38 @@ async def test_register_weak_password_fails(client: AsyncClient):
     assert r.status_code == 422
 
 
+@pytest.mark.asyncio
+async def test_register_cors_preflight_vercel_origin(client: AsyncClient):
+    """Verify that OPTIONS preflight from production frontend receives valid CORS headers."""
+    headers = {
+        "Origin": "https://inkloom-s.vercel.app",
+        "Access-Control-Request-Method": "POST",
+        "Access-Control-Request-Headers": "content-type, authorization",
+    }
+    r = await client.request("OPTIONS", "/api/v1/auth/register", headers=headers)
+    assert r.status_code == 200
+    assert r.headers.get("access-control-allow-origin") == "https://inkloom-s.vercel.app"
+    assert r.headers.get("access-control-allow-credentials") == "true"
+    allowed_methods = r.headers.get("access-control-allow-methods", "")
+    assert "POST" in allowed_methods
+    assert "OPTIONS" in allowed_methods
+    allowed_headers = r.headers.get("access-control-allow-headers", "").lower()
+    assert "content-type" in allowed_headers
+    assert "authorization" in allowed_headers
+
+
+@pytest.mark.asyncio
+async def test_register_cors_preflight_disallowed_origin(client: AsyncClient):
+    """Verify that OPTIONS preflight from an unauthorized origin is rejected."""
+    headers = {
+        "Origin": "https://unauthorized-origin.com",
+        "Access-Control-Request-Method": "POST",
+        "Access-Control-Request-Headers": "content-type",
+    }
+    r = await client.request("OPTIONS", "/api/v1/auth/register", headers=headers)
+    assert r.headers.get("access-control-allow-origin") is None
+
+
 # ---------------------------------------------------------------------------
 # 2. Login
 # ---------------------------------------------------------------------------
