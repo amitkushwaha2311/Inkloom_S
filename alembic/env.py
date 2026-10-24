@@ -55,14 +55,26 @@ def do_run_migrations(connection: Connection) -> None:
 async def run_async_migrations() -> None:
     """In this scenario we need to create an Engine
     and associate a connection with the context.
+
+    ``async_engine_from_config`` does not read ``connect_args`` from
+    application settings automatically.  We must pass ``ssl`` explicitly
+    so that ``alembic upgrade head`` can connect to Supabase (or any other
+    managed PostgreSQL that requires TLS) the same way the application
+    server does via ``build_engine``.
     """
     configuration = config.get_section(config.config_ini_section, {})
     configuration["sqlalchemy.url"] = settings.DATABASE_URL
 
+    # Build connect_args for asyncpg SSL — mirrors build_engine() in database.py.
+    engine_kwargs: dict = {"poolclass": pool.NullPool}
+    ssl_mode = settings.DB_SSL_MODE.strip().lower()
+    if ssl_mode and not settings.DATABASE_URL.startswith("sqlite"):
+        engine_kwargs["connect_args"] = {"ssl": ssl_mode}
+
     connectable = async_engine_from_config(
         configuration,
         prefix="sqlalchemy.",
-        poolclass=pool.NullPool,
+        **engine_kwargs,
     )
 
     async with connectable.connect() as connection:

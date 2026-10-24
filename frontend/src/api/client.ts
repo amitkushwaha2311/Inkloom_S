@@ -485,7 +485,7 @@ class ApiClient {
 
     listCorrections: (workspaceId: string, submissionId: string, revisionNumber: number) =>
       this.request<{ items: CorrectionSuggestion[]; total: number }>(
-        `/api/v1/workspaces/${workspaceId}/submissions/${submissionId}/revisions/${revisionNumber}/corrections`
+        `/api/v1/workspaces/${workspaceId}/submissions/${submissionId}/revisions/${revisionNumber}/suggestions`
       ),
 
     proposeCorrection: (
@@ -502,7 +502,7 @@ class ApiClient {
       }
     ) =>
       this.request<CorrectionSuggestion>(
-        `/api/v1/workspaces/${workspaceId}/submissions/${submissionId}/revisions/${revisionNumber}/corrections`,
+        `/api/v1/workspaces/${workspaceId}/submissions/${submissionId}/revisions/${revisionNumber}/suggestions`,
         {
           method: 'POST',
           body: JSON.stringify(data),
@@ -516,7 +516,7 @@ class ApiClient {
       correctionId: string
     ) =>
       this.request<{ correction: CorrectionSuggestion; new_revision: any }>(
-        `/api/v1/workspaces/${workspaceId}/submissions/${submissionId}/revisions/${revisionNumber}/corrections/${correctionId}/apply`,
+        `/api/v1/workspaces/${workspaceId}/submissions/${submissionId}/revisions/${revisionNumber}/suggestions/${correctionId}/apply`,
         { method: 'POST' }
       ),
 
@@ -567,7 +567,7 @@ class ApiClient {
     },
 
     getAnalytics: (workspaceId: string) =>
-      this.request<GovernanceAnalytics>(`/api/v1/workspaces/${workspaceId}/analytics`),
+      this.request<GovernanceAnalytics>(`/api/v1/workspaces/${workspaceId}/governance-analytics`),
   }
 }
 

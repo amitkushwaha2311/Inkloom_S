@@ -84,3 +84,6 @@ dmypy.json
 logs/
 tmp/
 scratch/
+
+# Local diagnostic / one-off scripts (load .env.prod, never commit)
+check_prod_db.py
